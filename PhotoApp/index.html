@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PhotoApp — зберігайте, редагуйте та діліться важливими моментами.">
+  <meta name="theme-color" content="#0b0b0c">
+  <title>PhotoApp — ваші моменти, по-новому</title>
+  <style>
+    :root { --black:#0b0b0c; --white:#f7f5ef; --acid:#caff4a; --orange:#ff6a3d; --violet:#a892ff; --muted:#a5a39e; --line:rgba(255,255,255,.13); --radius:28px; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; scroll-padding-top:88px; }
+    body { margin:0; color:var(--white); background:var(--black); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.5; overflow-x:hidden; }
+    body.menu-open { overflow:hidden; }
+    a { color:inherit; text-decoration:none; }
+    button { font:inherit; color:inherit; }
+    svg,img { display:block; width:100%; height:100%; }
+    img { object-fit:cover; }
+    .container { width:min(1180px,calc(100% - 40px)); margin-inline:auto; }
+    .skip-link { position:fixed; left:14px; top:14px; z-index:100; padding:10px 14px; background:var(--acid); color:var(--black); border-radius:12px; transform:translateY(-150%); }
+    .skip-link:focus { transform:none; }
+
+    header { position:fixed; inset:0 0 auto; z-index:50; padding:18px 0; transition:.25s ease; }
+    header.scrolled { padding:10px 0; background:rgba(11,11,12,.82); backdrop-filter:blur(18px); border-bottom:1px solid var(--line); }
+    .nav { display:flex; align-items:center; justify-content:space-between; gap:28px; }
+    .logo { display:flex; align-items:center; gap:10px; font-weight:900; letter-spacing:-.045em; font-size:1.2rem; }
+    .logo-icon { width:36px; aspect-ratio:1; display:grid; place-items:center; background:var(--acid); color:var(--black); border-radius:11px; transform:rotate(-6deg); }
+    .nav-links { display:flex; align-items:center; gap:28px; color:#d7d5cf; font-size:.92rem; font-weight:650; }
+    .nav-links>a:not(.button):hover { color:var(--acid); }
+    .button { min-height:50px; padding:0 22px; display:inline-flex; align-items:center; justify-content:center; gap:10px; border:1px solid var(--white); border-radius:999px; background:var(--white); color:var(--black); font-weight:800; cursor:pointer; transition:transform .2s ease,box-shadow .2s ease,background .2s ease; }
+    .button:hover { transform:translateY(-2px); box-shadow:0 12px 32px rgba(0,0,0,.3); }
+    .button.acid { background:var(--acid); border-color:var(--acid); }
+    .button.ghost { background:transparent; color:var(--white); border-color:var(--line); }
+    .button .arrow { transition:transform .2s ease; }
+    .button:hover .arrow { transform:translateX(4px); }
+    .menu-toggle { display:none; width:46px; height:46px; padding:0; background:transparent; border:1px solid var(--line); border-radius:50%; cursor:pointer; }
+    .menu-toggle span,.menu-toggle span::before,.menu-toggle span::after { display:block; width:19px; height:2px; margin:auto; background:var(--white); transition:.2s ease; }
+    .menu-toggle span { position:relative; }
+    .menu-toggle span::before,.menu-toggle span::after { content:""; position:absolute; left:0; }
+    .menu-toggle span::before { top:-6px; }
+    .menu-toggle span::after { top:6px; }
+    .menu-open .menu-toggle span { background:transparent; }
+    .menu-open .menu-toggle span::before { top:0; transform:rotate(45deg); }
+    .menu-open .menu-toggle span::after { top:0; transform:rotate(-45deg); }
+
+    .hero { position:relative; min-height:100svh; padding:145px 0 76px; display:grid; align-items:center; overflow:hidden; }
+    .hero::before { content:""; position:absolute; width:560px; height:560px; right:-180px; top:60px; background:var(--violet); border-radius:50%; filter:blur(130px); opacity:.22; }
+    .hero-grid { display:grid; grid-template-columns:1.08fr .92fr; gap:68px; align-items:center; }
+    .pill { display:inline-flex; align-items:center; gap:9px; padding:7px 12px; color:#d9d7d1; border:1px solid var(--line); border-radius:999px; font-size:.76rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; }
+    .pill::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--acid); box-shadow:0 0 0 5px rgba(202,255,74,.12); }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { max-width:720px; margin:23px 0 28px; font-size:clamp(3.8rem,7.7vw,7.2rem); line-height:.87; letter-spacing:-.075em; }
+    h1 span { color:var(--acid); font-family:Georgia,serif; font-style:italic; font-weight:500; }
+    .hero-copy { max-width:565px; color:var(--muted); font-size:clamp(1.04rem,1.7vw,1.22rem); }
+    .hero-actions { display:flex; gap:12px; flex-wrap:wrap; margin-top:34px; }
+
+    .phone-stage { position:relative; min-height:630px; display:grid; place-items:center; }
+    .orbit { position:absolute; width:540px; height:540px; border:1px solid var(--line); border-radius:50%; animation:spin 24s linear infinite; }
+    .orbit::before,.orbit::after { content:""; position:absolute; width:18px; height:18px; border-radius:50%; }
+    .orbit::before { background:var(--orange); left:55px; top:70px; }
+    .orbit::after { background:var(--acid); right:18px; bottom:155px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .phone { position:relative; z-index:3; width:300px; height:610px; padding:10px; background:#222225; border:2px solid #48484d; border-radius:48px; box-shadow:0 42px 100px rgba(0,0,0,.6); transform:rotate(5deg); }
+    .phone::before { content:""; position:absolute; z-index:5; width:92px; height:25px; top:16px; left:50%; transform:translateX(-50%); background:var(--black); border-radius:20px; }
+    .phone-screen { height:100%; overflow:hidden; background:#f2ede3; color:var(--black); border-radius:39px; }
+    .phone-top { padding:47px 18px 15px; display:flex; justify-content:space-between; align-items:center; font-size:.77rem; font-weight:800; }
+    .phone-avatar { width:29px; height:29px; border-radius:50%; background:var(--orange); }
+    .phone-title { padding:0 18px 13px; font-size:1.4rem; line-height:1; letter-spacing:-.05em; }
+    .phone-photo { height:325px; margin:0 10px; overflow:hidden; border-radius:25px; }
+    .phone-caption { padding:17px 18px; }
+    .phone-caption strong { display:block; font-size:.96rem; }
+    .phone-caption span { color:#77746f; font-size:.72rem; }
+    .phone-tools { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:2px 12px 14px; }
+    .phone-tools button { display:grid; place-items:center; gap:3px; padding:8px 2px; border:0; background:#e5dfd4; border-radius:13px; color:var(--black); font-size:.58rem; cursor:pointer; }
+    .phone-tools b { font-size:1rem; }
+    .floating-card { position:absolute; z-index:4; padding:13px 16px; background:rgba(247,245,239,.94); color:var(--black); border-radius:17px; box-shadow:0 18px 50px rgba(0,0,0,.28); backdrop-filter:blur(12px); }
+    .floating-card.one { left:-5px; top:135px; transform:rotate(-7deg); }
+    .floating-card.two { right:-8px; bottom:120px; transform:rotate(7deg); }
+    .floating-card small { display:block; color:#77746f; font-size:.66rem; }
+    .floating-card strong { font-size:.86rem; }
+    .mini-colors { display:flex; gap:5px; margin-top:7px; }
+    .mini-colors i { width:17px; height:17px; border-radius:50%; }
+    .mini-colors i:nth-child(1) { background:var(--orange); }
+    .mini-colors i:nth-child(2) { background:var(--violet); }
+    .mini-colors i:nth-child(3) { background:var(--acid); }
+
+    .ticker { overflow:hidden; padding:18px 0; background:var(--acid); color:var(--black); transform:rotate(-1deg) scale(1.01); }
+    .ticker-track { display:flex; width:max-content; animation:ticker 22s linear infinite; }
+    .ticker span { display:flex; align-items:center; gap:28px; padding-right:28px; font-size:.86rem; font-weight:900; letter-spacing:.13em; text-transform:uppercase; }
+    .ticker span::after { content:"✦"; }
+    @keyframes ticker { to { transform:translateX(-50%); } }
+
+    section { padding:118px 0; }
+    .section-head { display:grid; grid-template-columns:.8fr 1.2fr; gap:56px; align-items:end; margin-bottom:58px; }
+    .kicker { display:block; margin-bottom:19px; color:var(--acid); font-size:.76rem; font-weight:850; letter-spacing:.14em; text-transform:uppercase; }
+    h2 { margin-bottom:0; font-size:clamp(2.8rem,5.9vw,5.8rem); line-height:.92; letter-spacing:-.065em; }
+    .section-intro { max-width:600px; margin:0; color:var(--muted); font-size:1.1rem; }
+    .features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+    .feature { min-height:410px; padding:28px; display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--line); border-radius:var(--radius); background:#121214; transition:transform .25s ease,border-color .25s ease; }
+    .feature:hover { transform:translateY(-7px); border-color:rgba(202,255,74,.55); }
+    .feature-visual { position:relative; height:195px; margin-bottom:auto; display:grid; place-items:center; }
+    .feature h3 { margin:24px 0 10px; font-size:1.5rem; letter-spacing:-.04em; }
+    .feature p { margin:0; color:var(--muted); }
+    .stack-card { position:absolute; width:135px; height:160px; overflow:hidden; border:5px solid var(--white); border-radius:15px; box-shadow:0 16px 35px rgba(0,0,0,.3); }
+    .stack-card:nth-child(1) { transform:translateX(-55px) rotate(-13deg); }
+    .stack-card:nth-child(2) { transform:translateX(7px) rotate(3deg); }
+    .stack-card:nth-child(3) { transform:translateX(62px) rotate(14deg); }
+    .edit-ring { width:165px; height:165px; border:18px solid var(--violet); border-left-color:var(--orange); border-bottom-color:var(--acid); border-radius:50%; display:grid; place-items:center; font-size:2.5rem; transform:rotate(-24deg); }
+    .edit-ring span { transform:rotate(24deg); }
+    .share-bubble { width:175px; height:150px; display:grid; place-items:center; background:var(--orange); color:var(--black); border-radius:50% 50% 50% 14%; font-size:3rem; transform:rotate(-7deg); }
+
+    .demo { color:var(--black); background:var(--white); }
+    .demo .kicker { color:#5b35d5; }
+    .demo .section-intro { color:#696762; }
+    .demo-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:stretch; }
+    .demo-photo { min-height:650px; overflow:hidden; border-radius:var(--radius); background:#9db9d4; }
+    .demo-photo img { transition:filter .35s ease,transform .35s ease; }
+    .demo-photo:hover img { transform:scale(1.025); }
+    .editor { padding:clamp(28px,5vw,58px); display:flex; flex-direction:column; justify-content:center; background:#e9e4da; border-radius:var(--radius); }
+    .editor h3 { margin-bottom:14px; font-size:clamp(2.1rem,4vw,4rem); line-height:.95; letter-spacing:-.055em; }
+    .editor>p { color:#696762; }
+    .filter-label { margin:29px 0 12px; font-size:.75rem; font-weight:850; text-transform:uppercase; letter-spacing:.12em; }
+    .filters { display:flex; flex-wrap:wrap; gap:9px; }
+    .filter-button { padding:10px 15px; background:transparent; border:1px solid rgba(11,11,12,.18); border-radius:999px; color:var(--black); font-weight:750; cursor:pointer; }
+    .filter-button.active { background:var(--black); color:var(--white); }
+    .slider-row { display:grid; gap:10px; margin-top:26px; }
+    .slider-row label { display:flex; justify-content:space-between; font-size:.82rem; font-weight:750; }
+    input[type="range"] { width:100%; accent-color:var(--black); }
+
+    .gallery-head { display:flex; align-items:end; justify-content:space-between; gap:25px; margin-bottom:35px; }
+    .gallery-head h2 { max-width:700px; }
+    .gallery-grid { display:grid; grid-template-columns:1.15fr .85fr .85fr; grid-template-rows:300px 330px; gap:16px; }
+    .gallery-item { position:relative; overflow:hidden; border-radius:22px; }
+    .gallery-item:first-child { grid-row:span 2; }
+    .gallery-item:nth-child(4) { grid-column:span 2; }
+    .gallery-item img { transition:transform .5s ease; }
+    .gallery-item:hover img { transform:scale(1.045); }
+    .gallery-label { position:absolute; left:15px; bottom:15px; padding:7px 11px; background:rgba(11,11,12,.75); backdrop-filter:blur(8px); border-radius:999px; font-size:.7rem; font-weight:750; }
+
+    .cta { padding-top:35px; }
+    .cta-card { position:relative; padding:clamp(42px,8vw,92px); overflow:hidden; display:grid; grid-template-columns:1.2fr .8fr; gap:40px; align-items:center; background:var(--acid); color:var(--black); border-radius:36px; }
+    .cta-card::after { content:"✦"; position:absolute; right:-25px; top:-85px; font-size:23rem; line-height:1; opacity:.1; transform:rotate(12deg); }
+    .cta h2,.cta-side { position:relative; z-index:1; }
+    .cta-side p { font-size:1.05rem; }
+    .store-buttons { display:flex; flex-wrap:wrap; gap:10px; }
+    .store-button { padding:12px 17px; display:flex; align-items:center; gap:10px; background:var(--black); color:var(--white); border:0; border-radius:14px; cursor:pointer; }
+    .store-button b,.store-button small { display:block; line-height:1.1; }
+    .store-button small { color:#aaa; font-size:.62rem; }
+    footer { padding:45px 0 35px; }
+    .footer-row { display:flex; align-items:center; justify-content:space-between; gap:20px; color:var(--muted); font-size:.84rem; }
+    .footer-links { display:flex; gap:22px; }
+    .footer-links a:hover { color:var(--acid); }
+    .reveal { opacity:0; transform:translateY(24px); transition:opacity .7s ease,transform .7s ease; }
+    .reveal.visible { opacity:1; transform:none; }
+
+    @media (max-width:900px) {
+      .menu-toggle { display:grid; place-items:center; z-index:60; }
+      .nav-links { position:fixed; inset:0; padding:110px 28px 40px; flex-direction:column; justify-content:center; background:var(--black); font-size:1.5rem; opacity:0; visibility:hidden; transform:translateY(-12px); transition:.25s ease; }
+      .menu-open .nav-links { opacity:1; visibility:visible; transform:none; }
+      .hero-grid,.section-head,.cta-card { grid-template-columns:1fr; }
+      .hero-copy { max-width:680px; }
+      .phone-stage { margin-top:10px; }
+      .features-grid { grid-template-columns:1fr; }
+      .feature { min-height:340px; }
+      .demo-grid { grid-template-columns:1fr; }
+      .demo-photo { min-height:520px; }
+      .gallery-grid { grid-template-columns:1fr 1fr; grid-template-rows:430px 270px 270px; }
+      .gallery-item:first-child { grid-column:span 2; grid-row:auto; }
+      .gallery-item:nth-child(4) { grid-column:span 2; }
+    }
+    @media (max-width:580px) {
+      .container { width:min(100% - 24px,1180px); }
+      section { padding:82px 0; }
+      .hero { padding-top:120px; }
+      .hero-actions .button { width:100%; }
+      .phone-stage { min-height:560px; transform:scale(.88); margin:-10px -30px -40px; }
+      .orbit { width:465px; height:465px; }
+      .floating-card.one { left:4px; }
+      .floating-card.two { right:5px; }
+      .section-head { gap:22px; }
+      .gallery-head { align-items:start; flex-direction:column; }
+      .gallery-grid { grid-template-columns:1fr; grid-template-rows:repeat(4,310px); }
+      .gallery-item:first-child,.gallery-item:nth-child(4) { grid-column:auto; }
+      .footer-row { align-items:start; flex-direction:column; }
+    }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; transition-duration:.01ms!important; } .reveal { opacity:1; transform:none; } }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">До основного вмісту</a>
+  <header id="header">
+    <div class="container nav">
+      <a class="logo" href="#top" aria-label="PhotoApp — на головну"><span class="logo-icon">✦</span> PhotoApp</a>
+      <button class="menu-toggle" type="button" aria-label="Відкрити меню" aria-expanded="false"><span></span></button>
+      <nav class="nav-links" aria-label="Основна навігація"><a href="#features">Можливості</a><a href="#editor">Редактор</a><a href="#gallery">Галерея</a><a class="button acid" href="#download">Спробувати <span class="arrow">↗</span></a></nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <span class="pill">Ваші фото. Ваш простір.</span>
+          <h1>Моменти, які хочеться <span>зберегти.</span></h1>
+          <p class="hero-copy">PhotoApp збирає улюблені кадри, допомагає знайти свій стиль і перетворює звичайну галерею на особисту історію.</p>
+          <div class="hero-actions"><a class="button acid" href="#editor">Спробувати редактор <span class="arrow">→</span></a><a class="button ghost" href="#features">Дізнатися більше</a></div>
+        </div>
+        <div class="phone-stage" aria-label="Демонстрація інтерфейсу PhotoApp">
+          <div class="orbit" aria-hidden="true"></div>
+          <div class="floating-card one" aria-hidden="true"><small>Розумна добірка</small><strong>Осінній настрій</strong></div>
+          <div class="phone"><div class="phone-screen">
+            <div class="phone-top"><span>9:41</span><span class="phone-avatar"></span></div><h2 class="phone-title">Сьогодні</h2>
+            <div class="phone-photo"><img src="assets/carpathians.jpg" alt="Мандрівник спостерігає світанок у Карпатах"></div>
+            <div class="phone-caption"><strong>Ранок у Карпатах</strong><span>21 жовтня • Колекція «Подорожі»</span></div>
+            <div class="phone-tools"><button type="button"><b>◐</b>Тон</button><button type="button"><b>⌁</b>Світло</button><button type="button"><b>◇</b>Колір</button><button type="button"><b>↗</b>Share</button></div>
+          </div></div>
+          <div class="floating-card two" aria-hidden="true"><small>Палітра кадру</small><div class="mini-colors"><i></i><i></i><i></i></div></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ticker" aria-hidden="true"><div class="ticker-track"><span>Зберігайте</span><span>Редагуйте</span><span>Колекціонуйте</span><span>Діліться</span><span>Надихайтеся</span><span>Зберігайте</span><span>Редагуйте</span><span>Колекціонуйте</span><span>Діліться</span><span>Надихайтеся</span></div></div>
+
+    <section id="features"><div class="container">
+      <div class="section-head reveal"><div><span class="kicker">Усе необхідне</span><h2>Менше хаосу.<br>Більше історій.</h2></div><p class="section-intro">Від першого кадру до готової добірки — PhotoApp тримає ваші фотографії впорядкованими, красивими та завжди під рукою.</p></div>
+      <div class="features-grid">
+        <article class="feature reveal"><div class="feature-visual" aria-hidden="true"><div class="stack-card"><svg viewBox="0 0 130 155"><rect width="130" height="155" fill="#ff6a3d"/><circle cx="70" cy="48" r="25" fill="#ffd067"/><path d="M0 118 50 58l30 45 25-28 25 43v37H0z" fill="#3a4740"/></svg></div><div class="stack-card"><svg viewBox="0 0 130 155"><rect width="130" height="155" fill="#a892ff"/><circle cx="47" cy="48" r="25" fill="#caff4a"/><path d="M0 121 44 67l27 31 24-43 35 66v34H0z" fill="#292534"/></svg></div><div class="stack-card"><svg viewBox="0 0 130 155"><rect width="130" height="155" fill="#9db9d4"/><circle cx="90" cy="39" r="20" fill="#ffe099"/><path d="M0 116 35 77l19 20 30-52 46 71v39H0z" fill="#173338"/></svg></div></div><h3>Розумні колекції</h3><p>Групуйте кадри за настроєм, подією або місцем і знаходьте потрібне без нескінченного скролу.</p></article>
+        <article class="feature reveal"><div class="feature-visual" aria-hidden="true"><div class="edit-ring"><span>◐</span></div></div><h3>Легке редагування</h3><p>Колір, світло й готові стилі в одному простому редакторі. Жодних перевантажених панелей.</p></article>
+        <article class="feature reveal"><div class="feature-visual" aria-hidden="true"><div class="share-bubble">↗</div></div><h3>Приватний обмін</h3><p>Створюйте охайні добірки для друзів і близьких та самі вирішуйте, хто їх побачить.</p></article>
+      </div>
+    </div></section>
+
+    <section class="demo" id="editor"><div class="container">
+      <div class="section-head reveal"><div><span class="kicker">Живе демо</span><h2>Один кадр.<br>Різний настрій.</h2></div><p class="section-intro">Оберіть фільтр і змініть насиченість, щоб відчути, як працює мінімалістичний редактор PhotoApp.</p></div>
+      <div class="demo-grid reveal">
+        <div class="demo-photo" id="demo-photo"><img src="assets/coast.jpg" alt="Бірюзова морська затока з помаранчевим каяком"></div>
+        <div class="editor"><span class="kicker">Редактор PhotoApp</span><h3>Ваш стиль — за кілька дотиків.</h3><p>Спробуйте налаштування нижче. Це інтерактивний приклад, який працює прямо у браузері.</p><span class="filter-label">Фільтр</span><div class="filters" role="group" aria-label="Фільтри зображення"><button class="filter-button active" type="button" data-filter="none">Original</button><button class="filter-button" type="button" data-filter="warm">Warm</button><button class="filter-button" type="button" data-filter="mono">Mono</button><button class="filter-button" type="button" data-filter="dream">Dream</button></div><div class="slider-row"><label for="saturation"><span>Насиченість</span><span id="sat-value">100%</span></label><input id="saturation" type="range" min="0" max="160" value="100"></div></div>
+      </div>
+    </div></section>
+
+    <section id="gallery"><div class="container">
+      <div class="gallery-head reveal"><div><span class="kicker">Галерея настроїв</span><h2>Кожен день заслуговує на кадр.</h2></div><a class="button ghost" href="#download">Створити свою <span class="arrow">→</span></a></div>
+      <div class="gallery-grid">
+        <article class="gallery-item reveal"><img src="assets/carpathians.jpg" alt="Світанок над гірськими хребтами Карпат" loading="lazy"><span class="gallery-label">Подорожі</span></article>
+        <article class="gallery-item reveal"><img src="assets/architecture.jpg" alt="Велосипедист серед сучасної бетонної архітектури" loading="lazy"><span class="gallery-label">Архітектура</span></article>
+        <article class="gallery-item reveal"><img src="assets/coast.jpg" alt="Сонячне морське узбережжя та каяк" loading="lazy"><span class="gallery-label">Літо</span></article>
+        <article class="gallery-item reveal"><img src="assets/blue-hour.jpg" alt="Гірське озеро й освітлений будинок у сутінках" loading="lazy"><span class="gallery-label">Вечори</span></article>
+      </div>
+    </div></section>
+
+    <section class="cta" id="download"><div class="container cta-card reveal"><h2>Ваші найкращі моменти вже чекають.</h2><div class="cta-side"><p>Завантажте PhotoApp і перетворіть галерею на простір, куди хочеться повертатися.</p><div class="store-buttons"><button class="store-button" type="button" data-store="App Store"><span>●</span><span><small>Завантажити в</small><b>App Store</b></span></button><button class="store-button" type="button" data-store="Google Play"><span>▶</span><span><small>Завантажити з</small><b>Google Play</b></span></button></div><p id="store-status" role="status" aria-live="polite" style="min-height:24px;margin:14px 0 0;font-size:.82rem"></p></div></div></section>
+  </main>
+
+  <footer><div class="container footer-row"><a class="logo" href="#top"><span class="logo-icon">✦</span> PhotoApp</a><span>© <span id="year"></span> Дизайн-концепт PhotoApp</span><div class="footer-links"><a href="#features">Можливості</a><a href="#top">Нагору ↑</a></div></div></footer>
+
+  <script>
+    const body=document.body,header=document.getElementById('header'),menuButton=document.querySelector('.menu-toggle'),navLinks=document.querySelectorAll('.nav-links a');
+    function setMenu(open){body.classList.toggle('menu-open',open);menuButton.setAttribute('aria-expanded',String(open));menuButton.setAttribute('aria-label',open?'Закрити меню':'Відкрити меню');}
+    menuButton.addEventListener('click',()=>setMenu(!body.classList.contains('menu-open')));navLinks.forEach(link=>link.addEventListener('click',()=>setMenu(false)));
+    function updateHeader(){header.classList.toggle('scrolled',window.scrollY>18);}updateHeader();window.addEventListener('scroll',updateHeader,{passive:true});
+    const revealObserver=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');revealObserver.unobserve(entry.target);}});},{threshold:.12});document.querySelectorAll('.reveal').forEach(element=>revealObserver.observe(element));
+    const demoImage=document.querySelector('#demo-photo img'),saturation=document.getElementById('saturation'),satValue=document.getElementById('sat-value');let activeFilter='none';
+    function renderFilter(){const sat=saturation.value;const filters={none:`saturate(${sat}%)`,warm:`saturate(${sat}%) sepia(.22) hue-rotate(-12deg) contrast(1.04)`,mono:'saturate(0%) contrast(1.12)',dream:`saturate(${sat}%) hue-rotate(18deg) brightness(1.08)`};demoImage.style.filter=filters[activeFilter];satValue.textContent=`${sat}%`;}
+    document.querySelectorAll('.filter-button').forEach(button=>{button.addEventListener('click',()=>{document.querySelector('.filter-button.active').classList.remove('active');button.classList.add('active');activeFilter=button.dataset.filter;renderFilter();});});saturation.addEventListener('input',renderFilter);
+    document.querySelectorAll('[data-store]').forEach(button=>{button.addEventListener('click',()=>{document.getElementById('store-status').textContent=`${button.dataset.store}: демонстраційна кнопка — додайте реальне посилання на застосунок.`;});});
+    document.getElementById('year').textContent=new Date().getFullYear();
+  </script>
+</body>
+</html>
